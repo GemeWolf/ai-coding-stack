@@ -6,10 +6,51 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_FILE="$HOME/.gentle-ai/state.json"
-AGENTS=("kimi" "opencode" "pi")
+AGENTS=()
 
 log() {
     echo "==> $*"
+}
+
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --agents)
+                if [[ $# -lt 2 ]]; then
+                    log "Error: --agents requiere un valor"
+                    exit 1
+                fi
+                IFS=',' read -r -a AGENTS <<< "$2"
+                shift 2
+                ;;
+            --agents=*)
+                IFS=',' read -r -a AGENTS <<< "${1#*=}"
+                shift
+                ;;
+            *)
+                log "Error: argumento desconocido: $1"
+                exit 1
+                ;;
+        esac
+    done
+}
+
+get_state_agents() {
+    if [[ -f "$STATE_FILE" ]]; then
+        python3 - "$STATE_FILE" <<'PY'
+import json
+import sys
+
+try:
+    with open(sys.argv[1], "r") as f:
+        state = json.load(f)
+    agents = state.get("installed_agents", [])
+    if agents:
+        print(",".join(str(a) for a in agents))
+except Exception:
+    pass
+PY
+    fi
 }
 
 check_dependencies() {
@@ -93,24 +134,76 @@ print(f"state.json actualizado con agentes: {', '.join(agents)}")
 PY
 }
 
+ensure_uv_in_path() {
+    if command -v uv &>/dev/null; then
+        return 0
+    fi
+
+    local uv_dir
+    for uv_dir in "$HOME/.local/bin" "$HOME/.cargo/bin"; do
+        if [[ -f "$uv_dir/uv" ]] && [[ -d "$uv_dir" ]]; then
+            export PATH="$uv_dir:$PATH"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+install_uv() {
+    ensure_uv_in_path
+    if command -v uv &>/dev/null; then
+        log "uv ya está instalado: $(uv --version)"
+        return 0
+    fi
+
+    log "Instalando uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ensure_uv_in_path
+}
+
+install_markitdown_mcp() {
+    if command -v markitdown-mcp &>/dev/null; then
+        log "markitdown-mcp ya está instalado"
+        return 0
+    fi
+
+    log "Instalando markitdown-mcp via uv..."
+    uv tool install markitdown-mcp
+}
+
 main() {
     log "ai-coding-stack installer"
     log "Repo root: $REPO_ROOT"
 
+    parse_args "$@"
     check_dependencies
     install_homebrew
     install_gentle_ai
-    configure_gentle_ai_state
+
+    if [[ ${#AGENTS[@]} -gt 0 ]]; then
+        configure_gentle_ai_state
+    elif state_agents=$(get_state_agents) && [[ -n "$state_agents" ]]; then
+        IFS=',' read -r -a AGENTS <<< "$state_agents"
+        log "Usando agentes existentes en state.json: ${AGENTS[*]}"
+    else
+        log "No hay agentes configurados. Ejecutando gentle-ai install interactivo..."
+        gentle-ai install
+        if state_agents=$(get_state_agents) && [[ -n "$state_agents" ]]; then
+            IFS=',' read -r -a AGENTS <<< "$state_agents"
+        fi
+    fi
 
     log "Sincronizando assets de gentle-ai..."
     gentle-ai sync
 
-    configure_gentle_ai_state
+    install_uv
+    install_markitdown_mcp
 
     log "Aplicando custom instructions..."
     "$REPO_ROOT/scripts/apply-custom-instructions.sh"
 
-    log "Instalación completada. Agentes configurados: ${AGENTS[*]}"
+    log "Instalación completada. Agentes configurados: ${AGENTS[*]:-(ninguno)}"
 }
 
 main "$@"
