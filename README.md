@@ -43,7 +43,7 @@ Repositorio personal para respaldar y reinstalar rápidamente mi stack de herram
 ## Uso
 
 ```bash
-git clone https://github.com/geme/ai-coding-stack.git ~/Documentos/Github/ai-coding-stack
+git clone https://github.com/GemeWolf/ai-coding-stack.git ~/Documentos/Github/ai-coding-stack
 cd ~/Documentos/Github/ai-coding-stack
 ./install.sh [--agents agente1,agente2,...]
 ```
