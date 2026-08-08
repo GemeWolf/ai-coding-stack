@@ -1,3 +1,6 @@
+<!-- ai-coding-stack:meta
+agents: [all]
+-->
 # 📓 Obsidian Note-Taking Agent
 
 ## Vault Structure
