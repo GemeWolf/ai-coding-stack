@@ -1,0 +1,9 @@
+# MCP Manifest
+# Declares custom MCPs to be installed by scripts/install-mcps.sh.
+# Each entry: name, check_cmd (returns 0 if already installed), install_cmd.
+
+mcps:
+  - name: markitdown-mcp
+    description: Document-to-markdown MCP server (PDF, Word, Excel, URLs, YouTube)
+    check_cmd: "command -v markitdown-mcp"
+    install_cmd: "uv tool install markitdown-mcp"
