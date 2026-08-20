@@ -9,8 +9,8 @@
 #   pi_mcp_name - server key in Pi's mcp.json (defaults to `name`)
 #   pi_mcp_json - single-line JSON with the exact mcpServers entry.
 #                 {REPO_ROOT} is expanded to this repository's absolute path.
-#                 Pi config target: $PI_MCP_CONFIG, else
-#                 $PI_CODING_AGENT_DIR/mcp.json, else ~/.pi/agent/mcp.json
+#                 Pi config target: $PI_CODING_AGENT_DIR/mcp.json when set,
+#                 else ~/.pi/agent/mcp.json
 
 mcps:
   - name: markitdown-mcp

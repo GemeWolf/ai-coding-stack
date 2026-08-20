@@ -75,7 +75,7 @@ def parse_manifest(path):
 def upsert_pi_mcps(pi_mcps):
     """Register MCP servers in Pi's mcp.json, preserving unrelated keys/servers."""
     agent_dir = os.environ.get("PI_CODING_AGENT_DIR") or os.path.expanduser("~/.pi/agent")
-    config_path = os.environ.get("PI_MCP_CONFIG") or os.path.join(agent_dir, "mcp.json")
+    config_path = os.path.join(agent_dir, "mcp.json")
 
     print(f"-> Registering MCP servers in Pi config: {config_path}")
 

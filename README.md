@@ -92,7 +92,7 @@ ls ~/.pi/agent/APPEND_SYSTEM.md
 `scripts/install-mcps.sh` es la fuente de verdad para los MCPs personalizados. Por cada entrada de `config/mcp-manifest.yaml`:
 
 1. Instala el binario si declara `check_cmd`/`install_cmd` (idempotente).
-2. Si declara `pi_mcp_json`, registra/actualiza el servidor en la config MCP de Pi (`$PI_MCP_CONFIG` > `$PI_CODING_AGENT_DIR/mcp.json` > `~/.pi/agent/mcp.json`), preservando servidores ajenos. `{REPO_ROOT}` se expande a la ruta absoluta del repo.
+2. Si declara `pi_mcp_json`, registra/actualiza el servidor en la config MCP de Pi (`$PI_CODING_AGENT_DIR/mcp.json` si está definida, si no `~/.pi/agent/mcp.json`), preservando servidores ajenos. `{REPO_ROOT}` se expande a la ruta absoluta del repo.
 
 ```bash
 DRY_RUN=true bash scripts/install-mcps.sh   # simular sin escribir
