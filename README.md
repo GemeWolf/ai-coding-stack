@@ -11,7 +11,7 @@ Repositorio personal para respaldar y reinstalar rápidamente mi stack de herram
 - Centralizar configuraciones comunes.
 - Mantener apuntadores a repositorios relacionados.
 - Automatizar la instalación del entorno en una nueva máquina.
-- Instalar automáticamente herramientas complementarias (`uv`/`uvx` y `markitdown-mcp`) y reaplicar mis instrucciones personalizadas después de cada `gentle-ai sync`.
+- Instalar y registrar en Pi los MCPs declarados en `config/mcp-manifest.yaml` (markitdown, obsidian) y reaplicar mis instrucciones personalizadas después de cada `gentle-ai sync`.
 
 ## Estructura
 
@@ -19,7 +19,7 @@ Repositorio personal para respaldar y reinstalar rápidamente mi stack de herram
 .
 ├── install.sh                           # Punto de entrada: ejecuta scripts/install.sh (acepta --agents opcional)
 ├── scripts/
-│   ├── install.sh                       # Instala Homebrew, gentle-ai, uv/uvx y sincroniza agentes
+│   ├── install.sh                       # Orquesta: herramientas (Homebrew, gentle-ai, engram), MCPs, fuentes y sync de agentes
 │   ├── install-mcps.sh                  # Instala binarios de MCPs y los registra en Pi (~/.pi/agent/mcp.json)
 │   ├── obsidian-auth.sh                 # Headers de auth para el MCP de Obsidian (lee la API key del vault en runtime)
 │   └── apply-custom-instructions.sh     # Inyecta custom-instructions.md en cada agente
@@ -39,9 +39,11 @@ Repositorio personal para respaldar y reinstalar rápidamente mi stack de herram
 - `git`
 - `curl`
 - `python3`
+- `uv` (lo usa `install-mcps.sh` para instalar `markitdown-mcp`):
+  `curl -LsSf https://astral.sh/uv/install.sh | sh`
 - Conexión a internet
 
-> Nota: `uv`/`uvx` y `markitdown-mcp` se instalan automáticamente mediante `install.sh`. `ssh-homelab` no se instala automáticamente; requiere configuración manual.
+> Nota: ningún script instala `uv` automáticamente; es prerequisito manual. `ssh-homelab` tampoco se instala; requiere configuración manual.
 
 ## Uso
 
@@ -54,10 +56,14 @@ cd ~/Documentos/Github/ai-coding-stack
 `install.sh` hace lo siguiente:
 
 1. Valida/instala Homebrew.
-2. Instala `gentle-ai` via Homebrew.
+2. Instala `gentle-ai` (tap Homebrew) y `engram` (release verificado por checksum).
 3. Instala los MCPs declarados en `config/mcp-manifest.yaml` via `install-mcps.sh`:
    - `markitdown-mcp`: instala el binario con `uv tool install` y lo registra en Pi como servidor stdio (`directTools`).
-   - `obsidian`: lo registra en Pi contra el plugin Local REST API (`http://127.0.0.1:27123/mcp/`); `scripts/obsidian-auth.sh` lee la API key del vault en runtime, sin secretos en el repo. Requiere Obsidian de escritorio abierto con el plugin activo.
+   - `obsidian`: lo registra en Pi contra el plugin Local REST API (`http://127.0.0.1:27123/mcp/`); `scripts/obsidian-auth.sh` lee la API key del vault en runtime, sin secretos en el repo.
+
+   Prerequisitos del MCP de obsidian (una sola vez, en Obsidian de escritorio):
+   1. Instalar el plugin community **Local REST API**.
+   2. En sus settings, habilitar **Enable Non-encrypted (HTTP) Server** (`enableInsecureServer`, default: apagado) — el endpoint MCP vive en el puerto HTTP `27123`.
 4. Registra los agentes `kimi`, `opencode` y `pi` (o los indicados con `--agents`) en `~/.gentle-ai/state.json`.
 5. Corre `gentle-ai sync` para descargar skills, SDD agents, prompts, etc.
 6. Ejecuta `apply-custom-instructions.sh` para inyectar `config/shared/custom-instructions.md` en cada agente registrado.
@@ -83,6 +89,10 @@ ls ~/.gentle-ai/state.json
 ls ~/.kimi/KIMI.md
 ls ~/.config/opencode/opencode.json
 ls ~/.pi/agent/APPEND_SYSTEM.md
+
+# MCPs registrados en Pi (markitdown y obsidian deben aparecer):
+grep -o '"markitdown"\|"obsidian"' ~/.pi/agent/mcp.json
+# y dentro de Pi: /mcp muestra ambos servidores (obsidian requiere Obsidian abierto)
 ```
 
 > `ssh-homelab` no se instala automáticamente. Para usarlo, configúralo manualmente siguiendo la documentación del MCP.
