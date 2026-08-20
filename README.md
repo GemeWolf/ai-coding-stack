@@ -19,10 +19,13 @@ Repositorio personal para respaldar y reinstalar rápidamente mi stack de herram
 .
 ├── install.sh                           # Punto de entrada: ejecuta scripts/install.sh (acepta --agents opcional)
 ├── scripts/
-│   ├── install.sh                       # Instala Homebrew, gentle-ai, uv/uvx, markitdown-mcp y sincroniza agentes
+│   ├── install.sh                       # Instala Homebrew, gentle-ai, uv/uvx y sincroniza agentes
+│   ├── install-mcps.sh                  # Instala binarios de MCPs y los registra en Pi (~/.pi/agent/mcp.json)
+│   ├── obsidian-auth.sh                 # Headers de auth para el MCP de Obsidian (lee la API key del vault en runtime)
 │   └── apply-custom-instructions.sh     # Inyecta custom-instructions.md en cada agente
 ├── config/
 │   ├── .gitkeep                         # Preserva el directorio en git
+│   ├── mcp-manifest.yaml                # MCPs declarados: binario (check_cmd/install_cmd) + registro en Pi (pi_mcp_json)
 │   └── shared/
 │       └── custom-instructions.md       # Instrucciones personalizadas: Obsidian + MarkItDown
 ├── repos.md                             # Apuntadores a repos importantes
@@ -52,7 +55,9 @@ cd ~/Documentos/Github/ai-coding-stack
 
 1. Valida/instala Homebrew.
 2. Instala `gentle-ai` via Homebrew.
-3. Instala `uv`/`uvx` y `markitdown-mcp` (el MCP de Obsidian se ejecuta via `uvx mcp-obsidian`, no instala el escritorio de Obsidian).
+3. Instala los MCPs declarados en `config/mcp-manifest.yaml` via `install-mcps.sh`:
+   - `markitdown-mcp`: instala el binario con `uv tool install` y lo registra en Pi como servidor stdio (`directTools`).
+   - `obsidian`: lo registra en Pi contra el plugin Local REST API (`http://127.0.0.1:27123/mcp/`); `scripts/obsidian-auth.sh` lee la API key del vault en runtime, sin secretos en el repo. Requiere Obsidian de escritorio abierto con el plugin activo.
 4. Registra los agentes `kimi`, `opencode` y `pi` (o los indicados con `--agents`) en `~/.gentle-ai/state.json`.
 5. Corre `gentle-ai sync` para descargar skills, SDD agents, prompts, etc.
 6. Ejecuta `apply-custom-instructions.sh` para inyectar `config/shared/custom-instructions.md` en cada agente registrado.
@@ -81,6 +86,20 @@ ls ~/.pi/agent/APPEND_SYSTEM.md
 ```
 
 > `ssh-homelab` no se instala automáticamente. Para usarlo, configúralo manualmente siguiendo la documentación del MCP.
+
+## MCPs en Pi
+
+`scripts/install-mcps.sh` es la fuente de verdad para los MCPs personalizados. Por cada entrada de `config/mcp-manifest.yaml`:
+
+1. Instala el binario si declara `check_cmd`/`install_cmd` (idempotente).
+2. Si declara `pi_mcp_json`, registra/actualiza el servidor en la config MCP de Pi (`$PI_MCP_CONFIG` > `$PI_CODING_AGENT_DIR/mcp.json` > `~/.pi/agent/mcp.json`), preservando servidores ajenos. `{REPO_ROOT}` se expande a la ruta absoluta del repo.
+
+```bash
+DRY_RUN=true bash scripts/install-mcps.sh   # simular sin escribir
+bash scripts/install-mcps.sh                # aplicar
+```
+
+> Tras registrar MCPs nuevos, reinicia Pi o usa `/reload` para cargarlos.
 
 ## Actualización / re-aplicación
 
