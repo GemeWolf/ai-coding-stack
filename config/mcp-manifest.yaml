@@ -1,9 +1,26 @@
 # MCP Manifest
 # Declares custom MCPs to be installed by scripts/install-mcps.sh.
-# Each entry: name, check_cmd (returns 0 if already installed), install_cmd.
+#
+# Binary/tool installation:
+#   check_cmd   - returns 0 if already installed (skipped when absent)
+#   install_cmd - command used to install the tool (skipped when absent)
+#
+# Pi registration (optional):
+#   pi_mcp_name - server key in Pi's mcp.json (defaults to `name`)
+#   pi_mcp_json - single-line JSON with the exact mcpServers entry.
+#                 {REPO_ROOT} is expanded to this repository's absolute path.
+#                 Pi config target: $PI_MCP_CONFIG, else
+#                 $PI_CODING_AGENT_DIR/mcp.json, else ~/.pi/agent/mcp.json
 
 mcps:
   - name: markitdown-mcp
     description: Document-to-markdown MCP server (PDF, Word, Excel, URLs, YouTube)
     check_cmd: "command -v markitdown-mcp"
     install_cmd: "uv tool install markitdown-mcp"
+    pi_mcp_name: markitdown
+    pi_mcp_json: '{"command": "markitdown-mcp", "args": [], "directTools": true, "lifecycle": "lazy"}'
+
+  - name: obsidian
+    description: Obsidian vault MCP via Local REST API plugin (auth script reads API key from the vault)
+    pi_mcp_name: obsidian
+    pi_mcp_json: '{"url": "http://127.0.0.1:27123/mcp/", "requestHeadersCommand": {"command": "/bin/bash", "args": ["{REPO_ROOT}/scripts/obsidian-auth.sh"], "timeoutMs": 10000}, "lifecycle": "lazy"}'
